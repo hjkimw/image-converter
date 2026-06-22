@@ -13,7 +13,7 @@ export const MOBILE_VIDEO_LIMIT_SECONDS = 60;
 
 export const DEFAULT_IMAGE_OPTIONS: ImageProcessOptions = {
   outputFormat: "webp",
-  quality: 100,
+  quality: 80,
   resize: {
     mode: "original",
     maintainAspectRatio: true,
