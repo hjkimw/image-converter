@@ -128,10 +128,43 @@ describe("BatchFileList", () => {
     document.elementFromPoint = vi.fn().mockReturnValue(targetRow);
 
     fireEvent.pointerDown(handle);
-    fireEvent.pointerMove(handle, { clientX: 0, clientY: 100 });
+    fireEvent.pointerMove(handle, { clientX: 0, clientY: 100, buttons: 1 });
     fireEvent.pointerUp(handle);
 
     expect(onReorder).toHaveBeenCalledWith("a", "b");
+  });
+
+  it("does not trigger reorder when clicking a row after a completed drag", () => {
+    const onReorder = vi.fn();
+
+    render(
+      <BatchFileList
+        checkedIds={new Set()}
+        items={[createItem("a", "first.png"), createItem("b", "second.png")]}
+        onDownload={vi.fn()}
+        onRemove={vi.fn()}
+        onRemoveFolder={vi.fn()}
+        onReorder={onReorder}
+        onSelect={vi.fn()}
+        onToggleAll={vi.fn()}
+        onToggleChecked={vi.fn()}
+        selectedId="a"
+      />,
+    );
+
+    const handle = screen.getByLabelText("Reorder first.png");
+    const targetRow = screen.getByTestId("media-row-b");
+    document.elementFromPoint = vi.fn().mockReturnValue(targetRow);
+
+    fireEvent.pointerDown(handle);
+    fireEvent.pointerMove(handle, { clientX: 0, clientY: 100, buttons: 1 });
+    fireEvent.pointerUp(handle);
+
+    expect(onReorder).toHaveBeenCalledTimes(1);
+    onReorder.mockClear();
+
+    fireEvent.click(screen.getByRole("button", { name: /Open second.png/ }));
+    expect(onReorder).not.toHaveBeenCalled();
   });
 
   it("groups folder uploads and exposes a folder delete action", () => {
@@ -221,7 +254,7 @@ describe("BatchFileList", () => {
     document.elementFromPoint = vi.fn().mockReturnValue(targetSection);
 
     fireEvent.pointerDown(handle);
-    fireEvent.pointerMove(handle, { clientX: 0, clientY: 200 });
+    fireEvent.pointerMove(handle, { clientX: 0, clientY: 200, buttons: 1 });
     fireEvent.pointerUp(handle);
 
     expect(onReorderGroup).toHaveBeenCalledWith("Trip", "Work");
