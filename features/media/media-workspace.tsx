@@ -172,6 +172,7 @@ export function MediaWorkspace() {
   const handleFilesSelected = useCallback(
     async (files: File[]) => {
       const errors: ApiError[] = [];
+      const newIds: string[] = [];
 
       for (const file of files) {
         const validation = validateMediaFile(file);
@@ -203,6 +204,7 @@ export function MediaWorkspace() {
             progress: 0,
             warnings: validation.warnings,
           });
+          newIds.push(id);
         } catch (error) {
           addItem({
             id,
@@ -222,6 +224,14 @@ export function MediaWorkspace() {
             },
           });
         }
+      }
+
+      if (newIds.length > 0) {
+        setCheckedIds((current) => {
+          const next = new Set(current);
+          newIds.forEach((id) => next.add(id));
+          return next;
+        });
       }
 
       setUploadErrors(errors);
