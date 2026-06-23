@@ -1,5 +1,7 @@
 import type { UploadedMedia } from "@/types/media";
 
+export const DEFAULT_ARCHIVE_NAME = "converted-media-results";
+
 export function getFileRelativePath(file: File) {
   const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath;
 
@@ -44,4 +46,21 @@ export function createUniqueArchivePath(path: string, usedPaths: Set<string>) {
 
   usedPaths.add(candidate);
   return candidate;
+}
+
+export function getArchiveFilename(name: string) {
+  const sanitizedName = sanitizeArchiveName(name);
+  const baseName = sanitizedName || DEFAULT_ARCHIVE_NAME;
+
+  return baseName.toLowerCase().endsWith(".zip") ? baseName : `${baseName}.zip`;
+}
+
+function sanitizeArchiveName(name: string) {
+  const withoutZip = name.trim().replace(/\.zip$/i, "");
+
+  return withoutZip
+    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, "-")
+    .replace(/\s+/g, " ")
+    .replace(/-+/g, "-")
+    .replace(/^[.\-\s]+|[.\-\s]+$/g, "");
 }

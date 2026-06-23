@@ -4,6 +4,11 @@ import { MediaWorkspace } from "./media-workspace";
 import { useMediaStore } from "@/stores/media-store";
 import type { UploadedMedia } from "@/types/media";
 import { processImageInBrowser } from "@/lib/image/process-image";
+import { saveAs } from "file-saver";
+
+vi.mock("file-saver", () => ({
+  saveAs: vi.fn(),
+}));
 
 vi.mock("@/lib/image/process-image", () => ({
   processImageInBrowser: vi.fn(async (_file, _options, _metadata, onProgress?: (progress: number) => void) => {
@@ -31,8 +36,10 @@ describe("MediaWorkspace", () => {
     useMediaStore.setState({
       items: [],
       selectedId: undefined,
+      archiveName: "converted-media-results",
     });
     vi.mocked(processImageInBrowser).mockClear();
+    vi.mocked(saveAs).mockClear();
   });
 
   it("removes the current-job card and legacy metadata/sidebar cards", () => {
@@ -131,6 +138,61 @@ describe("MediaWorkspace", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Clear all source media" }));
     expect(useMediaStore.getState().items).toHaveLength(0);
+  });
+
+  it("pins the action bar on compact layouts and reserves bottom breathing room", () => {
+    render(<MediaWorkspace />);
+
+    expect(screen.getByTestId("media-main-panel")).toHaveClass("pb-[164px]", "xl:pb-0");
+    expect(screen.getByTestId("download-panel")).toHaveClass(
+      "fixed",
+      "inset-x-3",
+      "bottom-3",
+      "z-40",
+      "xl:static",
+    );
+  });
+
+  it("keeps the compact source queue at a fixed height with an internal scroll list", () => {
+    useMediaStore.setState({
+      items: [createItem({ id: "sample", name: "sample.png" })],
+      selectedId: "sample",
+    });
+
+    render(<MediaWorkspace />);
+
+    expect(screen.getByTestId("source-panel")).toHaveClass("xl:h-full", "xl:min-h-0");
+    expect(screen.getByTestId("source-queue-card")).toHaveClass(
+      "h-[min(42svh,360px)]",
+      "shrink-0",
+      "overflow-hidden",
+      "xl:h-auto",
+      "xl:flex-1",
+    );
+  });
+
+  it("uses the archive filename from settings for multi-result downloads", async () => {
+    useMediaStore.setState({
+      items: [
+        createItem({ id: "ready-a", name: "ready-a.png", withResult: true }),
+        createItem({ id: "ready-b", name: "ready-b.png", withResult: true }),
+      ],
+      selectedId: "ready-a",
+      archiveName: "converted-media-results",
+    });
+
+    render(<MediaWorkspace />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open settings" }));
+    fireEvent.change(screen.getByLabelText("Archive filename"), {
+      target: { value: "client delivery" },
+    });
+
+    fireEvent.click(screen.getByLabelText("Select ready-a.png"));
+    fireEvent.click(screen.getByLabelText("Select ready-b.png"));
+    fireEvent.click(screen.getByRole("button", { name: "다운로드 (2)" }));
+
+    await waitFor(() => expect(saveAs).toHaveBeenCalledWith(expect.any(Blob), "client delivery.zip"));
   });
 });
 

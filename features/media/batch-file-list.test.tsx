@@ -130,6 +130,56 @@ describe("BatchFileList", () => {
     expect(onReorder).toHaveBeenCalledWith("a", "b");
   });
 
+  it("allows the entire media row surface to start a drag reorder on touch layouts", () => {
+    const onReorder = vi.fn();
+
+    render(
+      <BatchFileList
+        checkedIds={new Set()}
+        items={[createItem("a", "first.png"), createItem("b", "second.png")]}
+        onDownload={vi.fn()}
+        onRemove={vi.fn()}
+        onRemoveFolder={vi.fn()}
+        onReorder={onReorder}
+        onSelect={vi.fn()}
+        onToggleAll={vi.fn()}
+        onToggleChecked={vi.fn()}
+        selectedId="a"
+      />,
+    );
+
+    fireEvent.pointerDown(screen.getByTestId("media-row-a"));
+    fireEvent.pointerEnter(screen.getByTestId("media-row-b"));
+    fireEvent.pointerUp(screen.getByTestId("media-row-a"));
+
+    expect(onReorder).toHaveBeenCalledWith("a", "b");
+  });
+
+  it("allows dragging from the thumbnail and filename surface without requiring the small handle", () => {
+    const onReorder = vi.fn();
+
+    render(
+      <BatchFileList
+        checkedIds={new Set()}
+        items={[createItem("a", "first.png"), createItem("b", "second.png")]}
+        onDownload={vi.fn()}
+        onRemove={vi.fn()}
+        onRemoveFolder={vi.fn()}
+        onReorder={onReorder}
+        onSelect={vi.fn()}
+        onToggleAll={vi.fn()}
+        onToggleChecked={vi.fn()}
+        selectedId="a"
+      />,
+    );
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Open first.png" }));
+    fireEvent.pointerEnter(screen.getByTestId("media-row-b"));
+    fireEvent.pointerUp(screen.getByRole("button", { name: "Open first.png" }));
+
+    expect(onReorder).toHaveBeenCalledWith("a", "b");
+  });
+
   it("groups folder uploads and exposes a folder delete action", () => {
     const onRemoveFolder = vi.fn();
 
@@ -159,6 +209,64 @@ describe("BatchFileList", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Delete folder Trip" }));
     expect(onRemoveFolder).toHaveBeenCalledWith("Trip");
+  });
+
+  it("keeps a collapsed folder group checkbox stable with custom mixed state", () => {
+    render(
+      <BatchFileList
+        checkedIds={new Set(["a"])}
+        items={[
+          createItem("a", "photo.png", 0, false, "Trip/photo.png"),
+          createItem("b", "clip.mp4", 0, false, "Trip/clip.mp4", "video"),
+        ]}
+        onDownload={vi.fn()}
+        onRemove={vi.fn()}
+        onRemoveFolder={vi.fn()}
+        onReorder={vi.fn()}
+        onSelect={vi.fn()}
+        onToggleAll={vi.fn()}
+        onToggleChecked={vi.fn()}
+        selectedId="a"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Collapse folder Trip" }));
+
+    const checkbox = screen.getByRole("checkbox", { name: "Select folder Trip" });
+    expect(checkbox.tagName).toBe("BUTTON");
+    expect(checkbox).toHaveAttribute("aria-checked", "mixed");
+    expect(checkbox).toHaveClass("size-4");
+    expect(screen.getByTestId("folder-checkbox-icon-Trip")).toHaveAttribute("data-state", "mixed");
+  });
+
+  it("renders folder drag handles and reports group reorder requests", () => {
+    const onReorderGroup = vi.fn();
+
+    render(
+      <BatchFileList
+        checkedIds={new Set()}
+        items={[
+          createItem("a", "photo.png", 0, false, "Trip/photo.png"),
+          createItem("b", "clip.mp4", 0, false, "Trip/clip.mp4", "video"),
+          createItem("c", "work.png", 0, false, "Work/work.png"),
+        ]}
+        onDownload={vi.fn()}
+        onRemove={vi.fn()}
+        onRemoveFolder={vi.fn()}
+        onReorder={vi.fn()}
+        onReorderGroup={onReorderGroup}
+        onSelect={vi.fn()}
+        onToggleAll={vi.fn()}
+        onToggleChecked={vi.fn()}
+        selectedId="a"
+      />,
+    );
+
+    fireEvent.pointerDown(screen.getByLabelText("Reorder folder Trip"));
+    fireEvent.pointerEnter(screen.getByTestId("media-group-Work"));
+    fireEvent.pointerUp(screen.getByLabelText("Reorder folder Trip"));
+
+    expect(onReorderGroup).toHaveBeenCalledWith("Trip", "Work");
   });
 
   it("collapses and expands folder-uploaded groups without deleting items", () => {
@@ -268,9 +376,9 @@ describe("BatchFileList", () => {
       />,
     );
 
-    const checkbox = screen.getByRole("checkbox", { name: "Select folder Trip" }) as HTMLInputElement;
-    expect(checkbox.checked).toBe(false);
-    expect(checkbox.indeterminate).toBe(true);
+    const checkbox = screen.getByRole("checkbox", { name: "Select folder Trip" });
+    expect(checkbox).toHaveAttribute("aria-checked", "mixed");
+    expect(screen.getByTestId("folder-checkbox-icon-Trip")).toHaveAttribute("data-state", "mixed");
   });
 
   it("checks all items when clicking an indeterminate group checkbox", () => {

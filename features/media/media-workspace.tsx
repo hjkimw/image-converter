@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DownloadPanel } from "@/features/download/download-panel";
 import { ImageSettingsPanel } from "@/features/image/image-settings-panel";
+import { ArchiveNamingPanel } from "@/features/media/archive-naming-panel";
 import { BatchFileList } from "@/features/media/batch-file-list";
 import { OutputNamingPanel } from "@/features/media/output-naming-panel";
 import { PreviewPanel } from "@/features/media/preview-panel";
@@ -24,7 +25,7 @@ import { FileUploader } from "@/features/upload/file-uploader";
 import { VideoSettingsPanel } from "@/features/video/video-settings-panel";
 import { processVideoInBrowser } from "@/lib/ffmpeg/client";
 import { processImageInBrowser } from "@/lib/image/process-image";
-import { createUniqueArchivePath, getZipOutputPath } from "@/lib/media/archive";
+import { createUniqueArchivePath, getArchiveFilename, getZipOutputPath } from "@/lib/media/archive";
 import { getDownloadDeliveryMode } from "@/lib/media/download-selection";
 import { createOutputFilename } from "@/lib/media/filenames";
 import { getMediaFolderKey } from "@/lib/media/folders";
@@ -62,9 +63,11 @@ export function MediaWorkspace() {
   const imageOptions = useMediaStore((state) => state.imageOptions);
   const videoOptions = useMediaStore((state) => state.videoOptions);
   const filenameTemplate = useMediaStore((state) => state.filenameTemplate);
+  const archiveName = useMediaStore((state) => state.archiveName);
   const addItem = useMediaStore((state) => state.addItem);
   const clearItems = useMediaStore((state) => state.clearItems);
   const removeItem = useMediaStore((state) => state.removeItem);
+  const reorderGroups = useMediaStore((state) => state.reorderGroups);
   const reorderItems = useMediaStore((state) => state.reorderItems);
   const selectItem = useMediaStore((state) => state.selectItem);
   const updateStatus = useMediaStore((state) => state.updateStatus);
@@ -74,6 +77,7 @@ export function MediaWorkspace() {
   const updateImageOptions = useMediaStore((state) => state.updateImageOptions);
   const updateVideoOptions = useMediaStore((state) => state.updateVideoOptions);
   const updateFilenameTemplate = useMediaStore((state) => state.updateFilenameTemplate);
+  const updateArchiveName = useMediaStore((state) => state.updateArchiveName);
   const renameResults = useMediaStore((state) => state.renameResults);
 
   const selectedItem = useMemo(
@@ -303,8 +307,8 @@ export function MediaWorkspace() {
     });
 
     const blob = await zip.generateAsync({ type: "blob" });
-    saveAs(blob, "converted-media-results.zip");
-  }, [downloadableItems]);
+    saveAs(blob, getArchiveFilename(archiveName));
+  }, [archiveName, downloadableItems]);
 
   const toggleCheckedItem = useCallback((id: string) => {
     setCheckedIds((current) => {
@@ -431,7 +435,10 @@ export function MediaWorkspace() {
           className="mx-auto flex w-full max-w-[1760px] flex-1 flex-col gap-3 p-3 lg:p-4 xl:min-h-0 xl:flex-row xl:overflow-hidden"
           style={workspaceStyle}
         >
-          <aside className="flex min-h-[420px] flex-col gap-3 overflow-hidden xl:h-full xl:min-h-0 xl:shrink-0 xl:basis-[var(--source-panel-width)]">
+          <aside
+            data-testid="source-panel"
+            className="flex min-h-0 flex-col gap-3 overflow-hidden xl:h-full xl:min-h-0 xl:shrink-0 xl:basis-[var(--source-panel-width)]"
+          >
             <FileUploader onFilesSelected={handleFilesSelected} />
             {uploadErrors.length > 0 ? (
               <div className="flex flex-col gap-2 rounded-md border border-destructive/50 bg-secondary p-4">
@@ -442,7 +449,10 @@ export function MediaWorkspace() {
                 ))}
               </div>
             ) : null}
-            <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-border bg-card">
+            <section
+              data-testid="source-queue-card"
+              className="flex h-[min(42svh,360px)] shrink-0 flex-col overflow-hidden rounded-md border border-border bg-card xl:h-auto xl:min-h-0 xl:flex-1"
+            >
               <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border p-3">
                 <div className="min-w-0">
                   <h2 className="text-base font-semibold leading-6">Source queue</h2>
@@ -474,6 +484,7 @@ export function MediaWorkspace() {
                 }}
                 onRemove={removeItem}
                 onRemoveFolder={removeFolderItems}
+                onReorderGroup={reorderGroups}
                 onReorder={reorderItems}
                 onSelect={selectItem}
                 onToggleAll={toggleAllChecked}
@@ -491,7 +502,10 @@ export function MediaWorkspace() {
             <span className="h-12 w-px rounded-full bg-current" />
           </button>
 
-          <section className="flex min-h-[720px] min-w-0 flex-1 flex-col gap-3 overflow-hidden xl:min-h-0">
+          <section
+            data-testid="media-main-panel"
+            className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-visible pb-[164px] xl:overflow-hidden xl:pb-0"
+          >
             <PreviewPanel
               action={
                 <Button
@@ -512,6 +526,7 @@ export function MediaWorkspace() {
               item={selectedItem}
             />
             <DownloadPanel
+              className="fixed inset-x-3 bottom-3 z-40 shadow-2xl xl:static xl:inset-auto xl:z-auto xl:shadow-none"
               conversionCount={conversionCount}
               convertedCount={checkedConvertedCount}
               downloadableCount={downloadableCount}
@@ -533,12 +548,14 @@ export function MediaWorkspace() {
             isOpen={isInspectorOpen}
             outputFormat={selectedOutputFormat}
             selectedItem={selectedItem}
+            archiveName={archiveName}
             filenameTemplate={filenameTemplate}
             imageOptions={imageOptions}
             videoOptions={videoOptions}
             onApplyTemplate={applyTemplateToCheckedResults}
             onClose={closeInspector}
             onFilenameTemplateChange={updateFilenameTemplate}
+            onArchiveNameChange={updateArchiveName}
             onImageOptionsChange={updateImageOptions}
             onVideoOptionsChange={updateVideoOptions}
           />
@@ -590,11 +607,13 @@ function InspectorDrawer({
   selectedItem,
   checkedCount,
   outputFormat,
+  archiveName,
   filenameTemplate,
   imageOptions,
   videoOptions,
   onClose,
   onApplyTemplate,
+  onArchiveNameChange,
   onFilenameTemplateChange,
   onImageOptionsChange,
   onVideoOptionsChange,
@@ -603,11 +622,13 @@ function InspectorDrawer({
   selectedItem?: UploadedMedia;
   checkedCount: number;
   outputFormat?: string;
+  archiveName: string;
   filenameTemplate: string;
   imageOptions: ImageProcessOptions;
   videoOptions: VideoProcessOptions;
   onClose: () => void;
   onApplyTemplate: () => void;
+  onArchiveNameChange: (name: string) => void;
   onFilenameTemplateChange: (template: string) => void;
   onImageOptionsChange: (options: Partial<ImageProcessOptions>) => void;
   onVideoOptionsChange: (options: Partial<VideoProcessOptions>) => void;
@@ -656,6 +677,7 @@ function InspectorDrawer({
             onApplyToChecked={onApplyTemplate}
             onTemplateChange={onFilenameTemplateChange}
           />
+          <ArchiveNamingPanel archiveName={archiveName} onArchiveNameChange={onArchiveNameChange} />
           {!selectedItem ? (
             <div className="flex min-h-36 items-center justify-center rounded-md border border-dashed hairline-dashed bg-secondary/40 p-4 text-center text-sm leading-6 text-muted-foreground">
               파일을 선택하면 이미지/영상 변환 설정이 여기에 표시됩니다.

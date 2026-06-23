@@ -1,8 +1,10 @@
 "use client";
 
 import { DEFAULT_IMAGE_OPTIONS, DEFAULT_VIDEO_OPTIONS } from "@/constants/media";
+import { DEFAULT_ARCHIVE_NAME } from "@/lib/media/archive";
 import { createOutputFilename, DEFAULT_FILENAME_TEMPLATE } from "@/lib/media/filenames";
-import { reorderItemsById } from "@/lib/media/reorder";
+import { getMediaFolderKey } from "@/lib/media/folders";
+import { reorderGroupsByKey, reorderItemsById } from "@/lib/media/reorder";
 import type {
   ApiError,
   ImageProcessOptions,
@@ -19,9 +21,11 @@ type MediaStore = {
   imageOptions: ImageProcessOptions;
   videoOptions: VideoProcessOptions;
   filenameTemplate: string;
+  archiveName: string;
   addItem: (item: UploadedMedia) => void;
   removeItem: (id: string) => void;
   reorderItems: (sourceId: string, targetId: string) => void;
+  reorderGroups: (sourceGroupKey: string, targetGroupKey: string) => void;
   clearItems: () => void;
   selectItem: (id: string) => void;
   updateStatus: (id: string, status: ProcessStatus, progress?: number) => void;
@@ -31,6 +35,7 @@ type MediaStore = {
   updateImageOptions: (options: Partial<ImageProcessOptions>) => void;
   updateVideoOptions: (options: Partial<VideoProcessOptions>) => void;
   updateFilenameTemplate: (template: string) => void;
+  updateArchiveName: (name: string) => void;
   renameResults: (ids: string[]) => void;
 };
 
@@ -40,6 +45,7 @@ export const useMediaStore = create<MediaStore>((set) => ({
   imageOptions: DEFAULT_IMAGE_OPTIONS,
   videoOptions: DEFAULT_VIDEO_OPTIONS,
   filenameTemplate: DEFAULT_FILENAME_TEMPLATE,
+  archiveName: DEFAULT_ARCHIVE_NAME,
   addItem: (item) =>
     set((state) => ({
       items: [...state.items, item],
@@ -59,6 +65,10 @@ export const useMediaStore = create<MediaStore>((set) => ({
   reorderItems: (sourceId, targetId) =>
     set((state) => ({
       items: reorderItemsById(state.items, sourceId, targetId),
+    })),
+  reorderGroups: (sourceGroupKey, targetGroupKey) =>
+    set((state) => ({
+      items: reorderGroupsByKey(state.items, sourceGroupKey, targetGroupKey, (item) => getMediaFolderKey(item.file)),
     })),
   clearItems: () =>
     set((state) => {
@@ -123,6 +133,7 @@ export const useMediaStore = create<MediaStore>((set) => ({
       },
     })),
   updateFilenameTemplate: (template) => set({ filenameTemplate: template }),
+  updateArchiveName: (name) => set({ archiveName: name }),
   renameResults: (ids) =>
     set((state) => {
       const selectedIds = new Set(ids);

@@ -85,4 +85,50 @@ describe("DownloadPanel", () => {
     expect(screen.getByRole("button", { name: "변환 (0)" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "다운로드 (0)" })).toBeDisabled();
   });
+
+  it("supports compact fixed positioning and hides the first status divider until desktop", () => {
+    render(
+      <DownloadPanel
+        className="fixed inset-x-3 bottom-3 xl:static"
+        conversionCount={0}
+        convertedCount={0}
+        downloadableCount={0}
+        failedCount={0}
+        isProcessing={false}
+        pendingCount={0}
+        selectedCount={0}
+        selectedSize={0}
+        onConvertSelected={vi.fn()}
+        onDownloadSelected={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("download-panel")).toHaveClass("fixed", "inset-x-3", "bottom-3", "xl:static");
+    expect(screen.getByTestId("status-pill-converted")).toHaveClass("border-l-0", "xl:border-l");
+    expect(screen.getByTestId("status-pill-pending")).toHaveClass("border-l");
+  });
+
+  it("places the selected summary above status counts and centers it on compact layouts", () => {
+    render(
+      <DownloadPanel
+        conversionCount={34}
+        convertedCount={0}
+        downloadableCount={0}
+        failedCount={0}
+        isProcessing={false}
+        pendingCount={34}
+        selectedCount={34}
+        selectedSize={4096}
+        onConvertSelected={vi.fn()}
+        onDownloadSelected={vi.fn()}
+      />,
+    );
+
+    const summary = screen.getByTestId("download-selection-summary");
+    const statusRow = screen.getByTestId("download-status-row");
+
+    expect(summary).toHaveTextContent("34개 선택됨");
+    expect(summary).toHaveClass("text-center", "lg:text-left");
+    expect(summary.compareDocumentPosition(statusRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 });

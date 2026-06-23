@@ -6,6 +6,7 @@ import { formatBytes } from "@/lib/media/format";
 import { cn } from "@/lib/utils";
 
 type DownloadPanelProps = {
+  className?: string;
   selectedCount: number;
   selectedSize: number;
   convertedCount: number;
@@ -19,6 +20,7 @@ type DownloadPanelProps = {
 };
 
 export function DownloadPanel({
+  className,
   selectedCount,
   selectedSize,
   convertedCount,
@@ -36,13 +38,16 @@ export function DownloadPanel({
   const hasSelection = selectedCount > 0;
 
   return (
-    <section className="shrink-0 rounded-md border border-border bg-card px-3 py-2">
+    <section
+      data-testid="download-panel"
+      className={cn("shrink-0 rounded-md border border-border bg-card px-3 py-2", className)}
+    >
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,420px)] lg:items-center">
-        <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-          <div className="min-w-0" aria-live="polite">
+        <div className="grid min-w-0 gap-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+          <div className="min-w-0 text-center lg:text-left" aria-live="polite" data-testid="download-selection-summary">
             {hasSelection ? (
               <>
-                <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
+                <div className="flex min-w-0 flex-wrap items-center justify-center gap-x-4 gap-y-1 lg:justify-start">
                   <h3 className="truncate text-sm font-semibold leading-5">{selectedCount}개 선택됨</h3>
                   <span className="sr-only">{selectedCount}개 항목 선택됨</span>
                   <p className="font-brand-mono text-xs leading-5 text-muted-foreground">{formatBytes(selectedSize)}</p>
@@ -53,8 +58,8 @@ export function DownloadPanel({
               <span className="sr-only">선택된 항목 없음</span>
             )}
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <StatusPill icon={CheckCircle2} tone="converted" value={convertedCount} label="converted" />
+          <div className="grid grid-cols-3 gap-2" data-testid="download-status-row">
+            <StatusPill icon={CheckCircle2} isFirst tone="converted" value={convertedCount} label="converted" />
             <StatusPill icon={Clock3} tone="pending" value={pendingCount} label="pending" />
             <StatusPill icon={XCircle} tone="failed" value={failedCount} label="failed" />
           </div>
@@ -76,19 +81,23 @@ export function DownloadPanel({
 
 function StatusPill({
   icon: Icon,
+  isFirst = false,
   tone,
   value,
   label,
 }: {
   icon: typeof CheckCircle2;
+  isFirst?: boolean;
   tone: "converted" | "pending" | "failed";
   value: number;
   label: string;
 }) {
   return (
     <div
+      data-testid={`status-pill-${tone}`}
       className={cn(
-        "flex min-w-0 items-center justify-center gap-2 border-l border-border px-2 text-xs leading-5",
+        "flex min-w-0 items-center justify-center gap-2 px-2 text-xs leading-5",
+        isFirst ? "border-l-0 xl:border-l xl:border-border" : "border-l border-border",
         tone === "converted" && "text-emerald-300",
         tone === "pending" && "text-amber-300",
         tone === "failed" && "text-red-300",

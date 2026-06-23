@@ -25,3 +25,44 @@ export function reorderItemsById<T extends { id: string }>(items: T[], sourceId:
 
   return reorderedIds.map((id) => itemById.get(id)).filter(Boolean) as T[];
 }
+
+export function reorderGroupsByKey<T>(
+  items: T[],
+  sourceGroupKey: string,
+  targetGroupKey: string,
+  getGroupKey: (item: T) => string | undefined = (item) => (item as { folderKey?: string }).folderKey,
+) {
+  if (sourceGroupKey === targetGroupKey) {
+    return items;
+  }
+
+  const groups: Array<{ key: string | undefined; items: T[] }> = [];
+  const groupIndexes = new Map<string | undefined, number>();
+
+  items.forEach((item) => {
+    const key = getGroupKey(item);
+    const index = groupIndexes.get(key);
+
+    if (index !== undefined) {
+      groups[index].items.push(item);
+      return;
+    }
+
+    groupIndexes.set(key, groups.length);
+    groups.push({ key, items: [item] });
+  });
+
+  const sourceIndex = groups.findIndex((group) => group.key === sourceGroupKey);
+  const targetIndex = groups.findIndex((group) => group.key === targetGroupKey);
+
+  if (sourceIndex === -1 || targetIndex === -1) {
+    return items;
+  }
+
+  const nextGroups = [...groups];
+  const [sourceGroup] = nextGroups.splice(sourceIndex, 1);
+  const nextTargetIndex = nextGroups.findIndex((group) => group.key === targetGroupKey);
+  nextGroups.splice(nextTargetIndex, 0, sourceGroup);
+
+  return nextGroups.flatMap((group) => group.items);
+}

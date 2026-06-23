@@ -18,9 +18,12 @@ export function PreviewPanel({ item, action }: PreviewPanelProps) {
 
   if (!item) {
     return (
-      <section className="relative flex min-h-0 flex-1 items-center justify-center rounded-md border border-border bg-card">
-        {action ? <div className="absolute right-3 top-3 z-10">{action}</div> : null}
-        <div className="flex max-w-md flex-col items-center gap-5 text-center">
+      <section
+        data-testid="empty-preview-panel"
+        className="relative flex h-[min(58svh,520px)] min-h-[360px] flex-none items-center justify-center overflow-y-auto rounded-md border border-border bg-card p-4 xl:h-auto xl:min-h-0 xl:flex-1 xl:overflow-hidden"
+      >
+        {action ? <div className="absolute right-4 top-4 z-10">{action}</div> : null}
+        <div className="m-auto flex max-w-md flex-col items-center gap-5 py-16 text-center">
           <div className="flex size-14 items-center justify-center rounded-sm border border-border bg-secondary text-primary">
             <ImageIcon aria-hidden="true" />
           </div>
@@ -41,7 +44,10 @@ export function PreviewPanel({ item, action }: PreviewPanelProps) {
   const fitPreview = () => setZoom(100);
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-border bg-card">
+    <section
+      data-testid="preview-panel"
+      className="flex h-[min(54svh,520px)] min-h-[320px] flex-none flex-col overflow-hidden rounded-md border border-border bg-card xl:h-auto xl:min-h-0 xl:flex-1"
+    >
       <div className="flex shrink-0 flex-col gap-2 border-b border-border p-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <h2 className="text-base font-semibold leading-6">Preview canvas</h2>
@@ -57,7 +63,7 @@ export function PreviewPanel({ item, action }: PreviewPanelProps) {
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden xl:grid-cols-[minmax(0,1fr)_48px_minmax(0,1fr)]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto xl:grid-cols-[minmax(0,1fr)_48px_minmax(0,1fr)] xl:overflow-hidden">
         <PreviewPane title="Original" description={item.mimeType || "Unknown MIME"}>
           <MediaPreview item={item} src={item.objectUrl} zoom={zoom} />
           <PreviewMetadata title="Before metadata" rows={metadata.before} />
@@ -131,12 +137,20 @@ function PreviewPane({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-0 flex-col gap-3 p-3">
+    <div
+      data-testid={`preview-pane-${title.toLowerCase()}`}
+      className="flex h-[360px] shrink-0 flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 xl:h-auto xl:min-h-0 xl:shrink xl:flex-1"
+    >
       <div className="min-w-0 shrink-0">
         <h3 className="text-sm font-semibold leading-5">{title}</h3>
         <p className="truncate text-xs leading-5 text-muted-foreground">{description}</p>
       </div>
-      <div className="flex min-h-0 flex-1 flex-col gap-3">{children}</div>
+      <div
+        data-testid={`preview-pane-body-${title.toLowerCase()}`}
+        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -158,10 +172,13 @@ function MediaPreview({
 
   if (item.type === "image" || resultMimeType?.startsWith("image/")) {
     return (
-      <div className="flex min-h-0 flex-1 overflow-auto rounded-md bg-secondary">
+      <div
+        data-testid="media-preview-frame"
+        className="flex h-[220px] shrink-0 overflow-auto rounded-md bg-secondary xl:min-h-[160px] xl:flex-1"
+      >
         <img
           alt={item.name}
-          className="m-auto h-full min-h-[220px] w-full origin-center rounded-md object-contain transition-transform duration-150"
+          className="m-auto h-full w-full origin-center rounded-md object-contain transition-transform duration-150"
           src={src}
           style={mediaStyle}
         />
@@ -170,9 +187,12 @@ function MediaPreview({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 overflow-auto rounded-md bg-secondary">
+    <div
+      data-testid="media-preview-frame"
+      className="flex h-[220px] shrink-0 overflow-auto rounded-md bg-secondary xl:min-h-[160px] xl:flex-1"
+    >
       <video
-        className="m-auto h-full min-h-[220px] w-full origin-center rounded-md object-contain transition-transform duration-150"
+        className="m-auto h-full w-full origin-center rounded-md object-contain transition-transform duration-150"
         controls
         muted
         playsInline

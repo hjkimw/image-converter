@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Download, Folder, GripVertical, Trash2 } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Download, Folder, GripVertical, Minus, Trash2 } from "lucide-react";
 import type { UploadedMedia } from "@/types/media";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ type BatchFileListProps = {
   onToggleChecked: (id: string) => void;
   onToggleAll: (checked: boolean) => void;
   onReorder: (sourceId: string, targetId: string) => void;
+  onReorderGroup?: (sourceGroupKey: string, targetGroupKey: string) => void;
   onDownload: (id: string) => void;
   onRemove: (id: string) => void;
   onRemoveFolder: (folderKey: string) => void;
@@ -32,11 +33,13 @@ export function BatchFileList({
   onToggleChecked,
   onToggleAll,
   onReorder,
+  onReorderGroup,
   onDownload,
   onRemove,
   onRemoveFolder,
 }: BatchFileListProps) {
   const [draggingId, setDraggingId] = useState<string>();
+  const [draggingGroupKey, setDraggingGroupKey] = useState<string>();
   const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<Set<string>>(() => new Set());
 
   if (items.length === 0) {
@@ -62,32 +65,51 @@ export function BatchFileList({
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3">
         {groups.map((group) => (
-          <section key={group.key} className="flex flex-col gap-2" data-testid={`media-group-${group.key}`}>
+          <section
+            key={group.key}
+            className="flex flex-col gap-2"
+            data-testid={`media-group-${group.key}`}
+            onPointerEnter={() => {
+              if (draggingGroupKey && draggingGroupKey !== group.key) {
+                onReorderGroup?.(draggingGroupKey, group.key);
+              }
+            }}
+            onPointerUp={() => setDraggingGroupKey(undefined)}
+            onPointerCancel={() => setDraggingGroupKey(undefined)}
+          >
             {shouldShowGroupHeaders ? (
-              <div className="flex items-center justify-between gap-2 rounded-sm border border-border bg-secondary/60 px-2 py-1.5">
+              <div
+                className={cn(
+                  "flex min-h-10 items-center justify-between gap-2 rounded-sm border border-border bg-secondary/60 px-2 py-1.5",
+                  draggingGroupKey === group.key && "border-primary bg-primary/10",
+                )}
+              >
                 <div className="flex min-w-0 items-center gap-2">
                   {group.isFolder ? (
                     <>
-                      <input
-                        ref={(el) => {
-                          if (el) {
-                            el.indeterminate = isGroupPartiallyChecked(group.items, checkedIds);
-                          }
-                        }}
-                        aria-label={`${isGroupFullyChecked(group.items, checkedIds) ? "Deselect" : "Select"} folder ${group.label}`}
-                        checked={isGroupFullyChecked(group.items, checkedIds)}
-                        className="size-4 shrink-0 cursor-pointer rounded-sm border border-input accent-primary"
-                        type="checkbox"
-                        onChange={() => {
-                          const shouldCheck = !isGroupFullyChecked(group.items, checkedIds);
-
-                          group.items.forEach((item) => {
-                            if (checkedIds.has(item.id) !== shouldCheck) {
-                              onToggleChecked(item.id);
-                            }
-                          });
+                      <FolderCheckbox
+                        groupKey={group.key}
+                        isChecked={isGroupFullyChecked(group.items, checkedIds)}
+                        isMixed={isGroupPartiallyChecked(group.items, checkedIds)}
+                        label={group.label}
+                        onToggle={() => {
+                          toggleGroupChecked(group.items, checkedIds, onToggleChecked);
                         }}
                       />
+                      <button
+                        aria-label={`Reorder folder ${group.label}`}
+                        className="flex size-7 shrink-0 cursor-grab items-center justify-center rounded-sm text-muted-foreground hover:bg-background hover:text-primary active:cursor-grabbing"
+                        type="button"
+                        onPointerDown={(event) => {
+                          event.preventDefault();
+                          setDraggingGroupKey(group.key);
+                          event.currentTarget.setPointerCapture?.(event.pointerId);
+                        }}
+                        onPointerUp={() => setDraggingGroupKey(undefined)}
+                        onPointerCancel={() => setDraggingGroupKey(undefined)}
+                      >
+                        <GripVertical aria-hidden="true" className="size-4" />
+                      </button>
                       <Button
                         aria-expanded={!collapsedGroupKeys.has(group.key)}
                         aria-label={`${collapsedGroupKeys.has(group.key) ? "Expand" : "Collapse"} folder ${group.label}`}
@@ -116,7 +138,10 @@ export function BatchFileList({
                       </Button>
                     </>
                   ) : (
-                    <Folder aria-hidden="true" className="size-4 shrink-0 text-primary" />
+                    <>
+                      <Folder aria-hidden="true" className="size-4 shrink-0 text-primary" />
+                      <span className="size-7 shrink-0" aria-hidden="true" />
+                    </>
                   )}
                   <button
                     className="flex min-w-0 items-center gap-2 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default"
@@ -174,15 +199,21 @@ export function BatchFileList({
                     <div
                       key={item.id}
                       data-testid={`media-row-${item.id}`}
+                      role="listitem"
                       onPointerEnter={() => {
                         if (draggingId && draggingId !== item.id) {
                           onReorder(draggingId, item.id);
                         }
                       }}
-                      onPointerUp={() => setDraggingId(undefined)}
+                      onPointerDown={(event) => {
+                        setDraggingId(item.id);
+                      }}
+                      onPointerUp={() => {
+                        setDraggingId(undefined);
+                      }}
                       onPointerCancel={() => setDraggingId(undefined)}
                       className={cn(
-                        "group relative grid w-full grid-cols-[28px_24px_minmax(0,1fr)_auto] items-start gap-2 rounded-md border border-border bg-background p-2 transition-colors hover:border-primary/70",
+                        "group relative grid w-full touch-none cursor-grab grid-cols-[28px_24px_minmax(0,1fr)_auto] items-start gap-2 rounded-md border border-border bg-background p-2 transition-colors hover:border-primary/70 active:cursor-grabbing",
                         selectedId === item.id && "border-primary bg-secondary",
                         draggingId === item.id && "border-primary bg-primary/10",
                       )}
@@ -193,6 +224,7 @@ export function BatchFileList({
                         className="mt-3 size-4 cursor-pointer rounded-sm border border-input accent-primary"
                         type="checkbox"
                         onChange={() => onToggleChecked(item.id)}
+                        onPointerDown={(event) => event.stopPropagation()}
                       />
                       <button
                         aria-label={`Reorder ${item.name}`}
@@ -241,6 +273,7 @@ export function BatchFileList({
                           size="icon"
                           variant="ghost"
                           onClick={() => onDownload(item.id)}
+                          onPointerDown={(event) => event.stopPropagation()}
                         >
                           <Download data-icon="inline-start" />
                         </Button>
@@ -251,6 +284,7 @@ export function BatchFileList({
                           onClick={() => {
                             onRemove(item.id);
                           }}
+                          onPointerDown={(event) => event.stopPropagation()}
                         >
                           <Trash2 data-icon="inline-start" />
                         </Button>
@@ -272,6 +306,52 @@ function isGroupFullyChecked(items: UploadedMedia[], checkedIds: Set<string>) {
 function isGroupPartiallyChecked(items: UploadedMedia[], checkedIds: Set<string>) {
   const checkedCount = items.filter((item) => checkedIds.has(item.id)).length;
   return checkedCount > 0 && checkedCount < items.length;
+}
+
+function toggleGroupChecked(items: UploadedMedia[], checkedIds: Set<string>, onToggleChecked: (id: string) => void) {
+  const shouldCheck = !isGroupFullyChecked(items, checkedIds);
+
+  items.forEach((item) => {
+    if (checkedIds.has(item.id) !== shouldCheck) {
+      onToggleChecked(item.id);
+    }
+  });
+}
+
+function FolderCheckbox({
+  groupKey,
+  isChecked,
+  isMixed,
+  label,
+  onToggle,
+}: {
+  groupKey: string;
+  isChecked: boolean;
+  isMixed: boolean;
+  label: string;
+  onToggle: () => void;
+}) {
+  const state = isMixed ? "mixed" : isChecked ? "checked" : "unchecked";
+
+  return (
+    <button
+      aria-checked={isMixed ? "mixed" : isChecked}
+      aria-label={`${isChecked ? "Deselect" : "Select"} folder ${label}`}
+      className={cn(
+        "flex size-4 shrink-0 items-center justify-center rounded-sm border text-[10px] transition-colors",
+        state === "unchecked" && "border-input bg-background text-transparent",
+        state !== "unchecked" && "border-primary bg-primary text-primary-foreground",
+      )}
+      role="checkbox"
+      type="button"
+      onClick={onToggle}
+    >
+      <span data-state={state} data-testid={`folder-checkbox-icon-${groupKey}`} className="flex items-center justify-center">
+        {state === "mixed" ? <Minus aria-hidden="true" className="size-3" /> : null}
+        {state === "checked" ? <Check aria-hidden="true" className="size-3" /> : null}
+      </span>
+    </button>
+  );
 }
 
 function MimePill({ item }: { item: UploadedMedia }) {
