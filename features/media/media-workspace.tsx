@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   CheckSquare,
   FileStack,
+  GripHorizontal,
   HardDrive,
   ImageIcon,
   Settings,
@@ -33,11 +34,15 @@ import { formatBytes } from "@/lib/media/format";
 import { extractImageMetadata, extractVideoMetadata } from "@/lib/media/metadata";
 import {
   DEFAULT_LEFT_PANEL_WIDTH,
+  DEFAULT_SOURCE_QUEUE_HEIGHT,
   clampLeftPanelWidth,
+  clampSourceQueueHeight,
   readStoredInspectorOpen,
   readStoredLeftPanelWidth,
+  readStoredSourceQueueHeight,
   writeStoredInspectorOpen,
   writeStoredLeftPanelWidth,
+  writeStoredSourceQueueHeight,
 } from "@/lib/media/panel-layout";
 import { getBrowserVideoDecision } from "@/lib/video/capability";
 import { validateMediaFile } from "@/lib/validation/media-validation";
@@ -57,6 +62,7 @@ export function MediaWorkspace() {
   const [uploadErrors, setUploadErrors] = useState<ApiError[]>([]);
   const [checkedIds, setCheckedIds] = useState<Set<string>>(() => new Set());
   const [leftPanelWidth, setLeftPanelWidth] = useState(DEFAULT_LEFT_PANEL_WIDTH);
+  const [sourceQueueHeight, setSourceQueueHeight] = useState(DEFAULT_SOURCE_QUEUE_HEIGHT);
   const [isInspectorOpen, setInspectorOpen] = useState(false);
   const items = useMediaStore((state) => state.items);
   const selectedId = useMediaStore((state) => state.selectedId);
@@ -102,6 +108,36 @@ export function MediaWorkspace() {
   const downloadableCount = downloadableItems.length;
   const selectedOutputFormat =
     selectedItem?.type === "image" ? imageOptions.outputFormat : selectedItem?.type === "video" ? videoOptions.outputFormat : undefined;
+  const startSourceQueueResize = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      (event.target as HTMLElement).setPointerCapture?.(event.pointerId);
+      let nextHeight = sourceQueueHeight;
+      const startY = event.clientY;
+      const startHeight = sourceQueueHeight;
+
+      const handleMove = (moveEvent: PointerEvent) => {
+        nextHeight = clampSourceQueueHeight(startHeight + moveEvent.clientY - startY);
+        setSourceQueueHeight(nextHeight);
+      };
+
+      const handleUp = () => {
+        try {
+          writeStoredSourceQueueHeight(window.localStorage, nextHeight);
+        } catch {
+          // Height remains in memory when browser storage is unavailable.
+        }
+        window.removeEventListener("pointermove", handleMove);
+        window.removeEventListener("pointerup", handleUp);
+      };
+
+      window.addEventListener("pointermove", handleMove);
+      window.addEventListener("pointerup", handleUp);
+    },
+    [sourceQueueHeight],
+  );
+
+  const sourceQueueStyle = { "--source-queue-height": `${sourceQueueHeight}px` } as CSSProperties;
   const workspaceStyle = { "--source-panel-width": `${leftPanelWidth}px` } as CSSProperties;
 
   useEffect(() => () => clearItems(), [clearItems]);
@@ -109,9 +145,11 @@ export function MediaWorkspace() {
   useEffect(() => {
     try {
       setLeftPanelWidth(readStoredLeftPanelWidth(window.localStorage));
+      setSourceQueueHeight(readStoredSourceQueueHeight(window.localStorage));
       setInspectorOpen(readStoredInspectorOpen(window.localStorage));
     } catch {
       setLeftPanelWidth(DEFAULT_LEFT_PANEL_WIDTH);
+      setSourceQueueHeight(DEFAULT_SOURCE_QUEUE_HEIGHT);
       setInspectorOpen(false);
     }
   }, []);
@@ -451,7 +489,8 @@ export function MediaWorkspace() {
             ) : null}
             <section
               data-testid="source-queue-card"
-              className="flex h-[min(42svh,360px)] shrink-0 flex-col overflow-hidden rounded-md border border-border bg-card xl:h-auto xl:min-h-0 xl:flex-1"
+              className="flex h-[var(--source-queue-height)] shrink-0 flex-col overflow-hidden rounded-md border border-border bg-card xl:h-auto xl:min-h-0 xl:flex-1"
+              style={sourceQueueStyle}
             >
               <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border p-3">
                 <div className="min-w-0">
@@ -491,6 +530,15 @@ export function MediaWorkspace() {
                 onToggleChecked={toggleCheckedItem}
               />
             </section>
+            <button
+              aria-label="Resize source queue height"
+              className="flex h-3 w-full shrink-0 cursor-row-resize touch-none items-center justify-center rounded-sm text-muted-foreground hover:text-primary xl:hidden"
+              data-testid="source-queue-resize-handle"
+              type="button"
+              onPointerDown={startSourceQueueResize}
+            >
+              <GripHorizontal aria-hidden="true" className="size-4" />
+            </button>
           </aside>
 
           <button

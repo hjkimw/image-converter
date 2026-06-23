@@ -153,7 +153,7 @@ describe("MediaWorkspace", () => {
     );
   });
 
-  it("keeps the compact source queue at a fixed height with an internal scroll list", () => {
+  it("keeps the compact source queue at a resizable height with an internal scroll list", () => {
     useMediaStore.setState({
       items: [createItem({ id: "sample", name: "sample.png" })],
       selectedId: "sample",
@@ -163,12 +163,13 @@ describe("MediaWorkspace", () => {
 
     expect(screen.getByTestId("source-panel")).toHaveClass("xl:h-full", "xl:min-h-0");
     expect(screen.getByTestId("source-queue-card")).toHaveClass(
-      "h-[min(42svh,360px)]",
+      "h-[var(--source-queue-height)]",
       "shrink-0",
       "overflow-hidden",
       "xl:h-auto",
       "xl:flex-1",
     );
+    expect(screen.getByTestId("source-queue-resize-handle")).toHaveClass("xl:hidden", "cursor-row-resize");
   });
 
   it("uses the archive filename from settings for multi-result downloads", async () => {
