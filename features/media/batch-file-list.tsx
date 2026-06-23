@@ -205,15 +205,8 @@ export function BatchFileList({
                           onReorder(draggingId, item.id);
                         }
                       }}
-                      onPointerDown={(event) => {
-                        setDraggingId(item.id);
-                      }}
-                      onPointerUp={() => {
-                        setDraggingId(undefined);
-                      }}
-                      onPointerCancel={() => setDraggingId(undefined)}
                       className={cn(
-                        "group relative grid w-full touch-none cursor-grab grid-cols-[28px_24px_minmax(0,1fr)_auto] items-start gap-2 rounded-md border border-border bg-background p-2 transition-colors hover:border-primary/70 active:cursor-grabbing",
+                        "group relative grid w-full touch-pan-y grid-cols-[28px_24px_minmax(0,1fr)_auto] items-start gap-2 rounded-md border border-border bg-background p-2 transition-colors hover:border-primary/70",
                         selectedId === item.id && "border-primary bg-secondary",
                         draggingId === item.id && "border-primary bg-primary/10",
                       )}
