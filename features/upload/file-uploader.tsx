@@ -48,7 +48,7 @@ export function FileUploader({ onFilesSelected }: FileUploaderProps) {
 
   const submitFolderFiles = useCallback(
     (fileList: FileList | File[]) => {
-      const files = markFolderSelectionFiles(Array.from(fileList));
+      const files = markFolderSelectionFiles(Array.from(fileList).filter((file) => !isHiddenOrSystemFile(file)));
 
       if (files.length > 0) {
         onFilesSelected(files);
@@ -160,10 +160,18 @@ async function collectDataTransferFiles(dataTransfer: DataTransfer) {
 
 async function readEntryFiles(entry: FileSystemEntry): Promise<File[]> {
   if (entry.isFile) {
+    if (isHiddenOrSystemEntry(entry.name)) {
+      return [];
+    }
+
     return [await readFileEntry(entry as FileSystemFileEntry)];
   }
 
   if (entry.isDirectory) {
+    if (entry.name.startsWith(".") || entry.name === "__MACOSX") {
+      return [];
+    }
+
     const entries = await readDirectoryEntries(entry as FileSystemDirectoryEntry);
     const files = await Promise.all(entries.map((childEntry) => readEntryFiles(childEntry)));
 
@@ -198,6 +206,14 @@ function readDirectoryEntries(entry: FileSystemDirectoryEntry) {
 
     readBatch();
   });
+}
+
+function isHiddenOrSystemFile(file: File) {
+  return isHiddenOrSystemEntry(file.name);
+}
+
+function isHiddenOrSystemEntry(name: string) {
+  return name.startsWith(".") || name === "Thumbs.db" || name === "desktop.ini";
 }
 
 function withRelativePath(file: File, fullPath?: string) {

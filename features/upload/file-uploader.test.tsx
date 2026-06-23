@@ -28,6 +28,25 @@ describe("FileUploader", () => {
     expect(folderInput).toHaveAttribute("directory");
   });
 
+  it("filters hidden and system files from folder uploads", () => {
+    const onFilesSelected = vi.fn();
+    render(<FileUploader onFilesSelected={onFilesSelected} />);
+
+    const folderInput = screen.getByLabelText("Upload a folder");
+    const image = createFolderFile("photo.png", "Trip/photo.png");
+    const dsStore = createFolderFile(".DS_Store", "Trip/.DS_Store");
+    const thumbsDb = createFolderFile("Thumbs.db", "Trip/Thumbs.db");
+    const desktopIni = createFolderFile("desktop.ini", "Trip/desktop.ini");
+    const gitkeep = createFolderFile(".gitkeep", "Trip/.gitkeep");
+
+    fireEvent.change(folderInput, { target: { files: [image, dsStore, thumbsDb, desktopIni, gitkeep] } });
+
+    expect(onFilesSelected).toHaveBeenCalledTimes(1);
+    const passedFiles = onFilesSelected.mock.calls[0][0];
+    expect(passedFiles).toHaveLength(1);
+    expect(passedFiles[0].name).toBe("photo.png");
+  });
+
   it("marks each folder picker selection as a separate group", () => {
     const onFilesSelected = vi.fn();
     render(<FileUploader onFilesSelected={onFilesSelected} />);
