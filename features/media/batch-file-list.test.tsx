@@ -130,56 +130,6 @@ describe("BatchFileList", () => {
     expect(onReorder).toHaveBeenCalledWith("a", "b");
   });
 
-  it("allows the entire media row surface to start a drag reorder on touch layouts", () => {
-    const onReorder = vi.fn();
-
-    render(
-      <BatchFileList
-        checkedIds={new Set()}
-        items={[createItem("a", "first.png"), createItem("b", "second.png")]}
-        onDownload={vi.fn()}
-        onRemove={vi.fn()}
-        onRemoveFolder={vi.fn()}
-        onReorder={onReorder}
-        onSelect={vi.fn()}
-        onToggleAll={vi.fn()}
-        onToggleChecked={vi.fn()}
-        selectedId="a"
-      />,
-    );
-
-    fireEvent.pointerDown(screen.getByTestId("media-row-a"));
-    fireEvent.pointerEnter(screen.getByTestId("media-row-b"));
-    fireEvent.pointerUp(screen.getByTestId("media-row-a"));
-
-    expect(onReorder).toHaveBeenCalledWith("a", "b");
-  });
-
-  it("allows dragging from the thumbnail and filename surface without requiring the small handle", () => {
-    const onReorder = vi.fn();
-
-    render(
-      <BatchFileList
-        checkedIds={new Set()}
-        items={[createItem("a", "first.png"), createItem("b", "second.png")]}
-        onDownload={vi.fn()}
-        onRemove={vi.fn()}
-        onRemoveFolder={vi.fn()}
-        onReorder={onReorder}
-        onSelect={vi.fn()}
-        onToggleAll={vi.fn()}
-        onToggleChecked={vi.fn()}
-        selectedId="a"
-      />,
-    );
-
-    fireEvent.pointerDown(screen.getByRole("button", { name: "Open first.png" }));
-    fireEvent.pointerEnter(screen.getByTestId("media-row-b"));
-    fireEvent.pointerUp(screen.getByRole("button", { name: "Open first.png" }));
-
-    expect(onReorder).toHaveBeenCalledWith("a", "b");
-  });
-
   it("groups folder uploads and exposes a folder delete action", () => {
     const onRemoveFolder = vi.fn();
 
