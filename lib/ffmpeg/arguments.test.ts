@@ -24,6 +24,8 @@ describe("buildVideoConvertArgs", () => {
       "scale=1280:720",
       "-c:v",
       "libx264",
+      "-c:a",
+      "aac",
       "-b:v",
       "1200k",
       "-preset",
@@ -47,6 +49,6 @@ describe("buildVideoConvertArgs", () => {
           maintainAspectRatio: true,
         },
       }),
-    ).toEqual(["-i", "input.mp4", "-c:v", "libvpx-vp9", "-crf", "34", "-b:v", "0", "output.webm"]);
+    ).toEqual(["-i", "input.mp4", "-c:v", "libvpx-vp9", "-c:a", "libopus", "-crf", "34", "-b:v", "0", "output.webm"]);
   });
 });

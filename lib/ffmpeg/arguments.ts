@@ -10,6 +10,11 @@ const VIDEO_CODEC_ARGS = {
   vp9: "libvpx-vp9",
 } as const;
 
+const AUDIO_CODEC_ARGS = {
+  mp4: "aac",
+  webm: "libopus",
+} as const;
+
 export function buildVideoConvertArgs({
   inputName,
   outputName,
@@ -26,6 +31,7 @@ export function buildVideoConvertArgs({
   }
 
   args.push("-c:v", VIDEO_CODEC_ARGS[videoCodec]);
+  args.push("-c:a", AUDIO_CODEC_ARGS[outputFormat]);
 
   if (crf !== undefined) {
     args.push("-crf", String(crf));
