@@ -152,6 +152,11 @@ export function BatchFileList({
                           toggleGroupChecked(group.items, checkedIds, onToggleChecked);
                         }}
                       />
+                      <Folder
+                        aria-hidden="true"
+                        className="size-4 shrink-0 text-primary"
+                        data-testid={`folder-group-icon-${group.key}`}
+                      />
                       <GroupDragHandle
                         groupKey={group.key}
                         label={group.label}
@@ -199,7 +204,6 @@ export function BatchFileList({
                           toggleGroupChecked(group.items, checkedIds, onToggleChecked);
                         }}
                       />
-                      <Folder aria-hidden="true" className="size-4 shrink-0 text-primary" />
                       <GroupDragHandle
                         groupKey={group.key}
                         label={group.label}

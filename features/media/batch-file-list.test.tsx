@@ -451,6 +451,29 @@ describe("BatchFileList", () => {
     expect(onReorderGroup).toHaveBeenCalledWith("__loose_media__", "Trip", "before");
   });
 
+  it("shows the folder icon only for folder-uploaded groups", () => {
+    render(
+      <BatchFileList
+        checkedIds={new Set()}
+        items={[
+          createItem("a", "photo.png", 0, false, "Trip/photo.png"),
+          createItem("b", "loose.png"),
+        ]}
+        onDownload={vi.fn()}
+        onRemove={vi.fn()}
+        onRemoveFolder={vi.fn()}
+        onReorder={vi.fn()}
+        onSelect={vi.fn()}
+        onToggleAll={vi.fn()}
+        onToggleChecked={vi.fn()}
+        selectedId="a"
+      />,
+    );
+
+    expect(screen.getByTestId("folder-group-icon-Trip")).toBeInTheDocument();
+    expect(screen.queryByTestId("folder-group-icon-__loose_media__")).not.toBeInTheDocument();
+  });
+
   it("collapses and expands folder-uploaded groups without deleting items", () => {
     render(
       <BatchFileList

@@ -13,6 +13,10 @@ type PreviewPanelProps = {
   action?: React.ReactNode;
 };
 
+const MIN_PREVIEW_ZOOM = 50;
+const MAX_PREVIEW_ZOOM = 1000;
+const PREVIEW_ZOOM_STEP = 10;
+
 export function PreviewPanel({ item, action }: PreviewPanelProps) {
   const [zoom, setZoom] = useState(100);
 
@@ -39,8 +43,8 @@ export function PreviewPanel({ item, action }: PreviewPanelProps) {
   }
 
   const metadata = buildPreviewMetadata(item);
-  const zoomOut = () => setZoom((current) => Math.max(50, current - 10));
-  const zoomIn = () => setZoom((current) => Math.min(200, current + 10));
+  const zoomOut = () => setZoom((current) => Math.max(MIN_PREVIEW_ZOOM, current - PREVIEW_ZOOM_STEP));
+  const zoomIn = () => setZoom((current) => Math.min(MAX_PREVIEW_ZOOM, current + PREVIEW_ZOOM_STEP));
   const fitPreview = () => setZoom(100);
 
   return (
@@ -116,11 +120,11 @@ function PreviewZoomControls({
         Fit
       </Button>
       <div className="h-5 w-px bg-border" />
-      <Button aria-label="Zoom out" className="size-7 px-0" disabled={zoom <= 50} size="icon" variant="ghost" onClick={onZoomOut}>
+      <Button aria-label="Zoom out" className="size-7 px-0" disabled={zoom <= MIN_PREVIEW_ZOOM} size="icon" variant="ghost" onClick={onZoomOut}>
         <Minus data-icon="inline-start" />
       </Button>
-      <span className="font-brand-mono w-12 text-center text-xs leading-5 text-muted-foreground">{zoom}%</span>
-      <Button aria-label="Zoom in" className="size-7 px-0" disabled={zoom >= 200} size="icon" variant="ghost" onClick={onZoomIn}>
+      <span className="font-brand-mono w-14 text-center text-xs leading-5 text-muted-foreground">{zoom}%</span>
+      <Button aria-label="Zoom in" className="size-7 px-0" disabled={zoom >= MAX_PREVIEW_ZOOM} size="icon" variant="ghost" onClick={onZoomIn}>
         <Plus data-icon="inline-start" />
       </Button>
     </div>

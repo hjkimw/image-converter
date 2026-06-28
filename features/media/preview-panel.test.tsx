@@ -39,6 +39,20 @@ describe("PreviewPanel", () => {
     expect(screen.getByText("100%")).toBeInTheDocument();
   });
 
+  it("allows preview zooming up to 1000 percent", () => {
+    render(<PreviewPanel item={createConvertedImage()} />);
+
+    const zoomIn = screen.getByRole("button", { name: "Zoom in" });
+
+    for (let index = 0; index < 90; index += 1) {
+      fireEvent.click(zoomIn);
+    }
+
+    expect(screen.getByText("1000%")).toBeInTheDocument();
+    expect(zoomIn).toBeDisabled();
+    expect(screen.getAllByAltText("sample.png")[0]).toHaveStyle({ width: "1000%", height: "1000%" });
+  });
+
   it("pans zoomed preview media with pointer drag on both axes", () => {
     render(<PreviewPanel item={createConvertedImage()} />);
 
