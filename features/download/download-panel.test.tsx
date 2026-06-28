@@ -148,11 +148,33 @@ describe("DownloadPanel", () => {
       />,
     );
 
-    expect(screen.getByTestId("download-panel-layout")).toHaveClass("xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]");
-    expect(screen.getByTestId("download-summary-status")).toHaveClass("2xl:grid-cols-[minmax(190px,max-content)_minmax(360px,1fr)]");
+    expect(screen.getByTestId("download-panel-layout")).toHaveClass(
+      "xl:grid-cols-[minmax(190px,0.7fr)_minmax(300px,1fr)_minmax(320px,420px)]",
+    );
+    expect(screen.getByTestId("download-selection-summary")).toHaveClass("xl:min-h-10");
     expect(screen.getByTestId("download-status-row")).toHaveClass("min-w-0");
     expect(screen.getByTestId("download-action-row")).toHaveClass("min-w-0");
     expect(screen.getByTestId("download-selection-title")).toHaveClass("whitespace-nowrap");
     expect(screen.getByTestId("download-selection-size")).toHaveClass("whitespace-nowrap");
+  });
+
+  it("reserves the desktop summary slot even before any item is selected", () => {
+    render(
+      <DownloadPanel
+        conversionCount={0}
+        convertedCount={0}
+        downloadableCount={0}
+        failedCount={0}
+        isProcessing={false}
+        pendingCount={0}
+        selectedCount={0}
+        selectedSize={0}
+        onConvertSelected={vi.fn()}
+        onDownloadSelected={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("download-selection-summary")).toHaveClass("xl:min-h-10");
+    expect(screen.getByTestId("download-panel-layout")).toHaveClass("xl:items-center");
   });
 });

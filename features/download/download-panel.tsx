@@ -44,13 +44,13 @@ export function DownloadPanel({
     >
       <div
         data-testid="download-panel-layout"
-        className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] xl:items-center"
+        className="grid gap-3 xl:grid-cols-[minmax(190px,0.7fr)_minmax(300px,1fr)_minmax(320px,420px)] xl:items-center"
       >
         <div
-          className="grid min-w-0 gap-2 2xl:grid-cols-[minmax(190px,max-content)_minmax(360px,1fr)] 2xl:items-center"
+          className="grid min-w-0 gap-2 xl:contents"
           data-testid="download-summary-status"
         >
-          <div className="min-w-0 text-center lg:min-w-[190px] lg:text-left" aria-live="polite" data-testid="download-selection-summary">
+          <div className="min-w-0 text-center lg:min-w-[190px] lg:text-left xl:min-h-10" aria-live="polite" data-testid="download-selection-summary">
             {hasSelection ? (
               <>
                 <div className="flex min-w-0 flex-wrap items-center justify-center gap-x-4 gap-y-1 lg:flex-nowrap lg:justify-start">
